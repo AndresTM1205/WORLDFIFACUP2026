@@ -4,15 +4,19 @@ const dotenv = require('dotenv');
 
 // Ensure environment variables are loaded BEFORE using them
 const NODE_ENV = (process.env.NODE_ENV || 'development').trim();
-const envFile = NODE_ENV === 'production' ? '.env.production' : '.env.development';
-const envPath = path.resolve(process.cwd(), envFile);
 
-// Load from .env.development or .env.production first
-dotenv.config({ path: envPath });
+// Try loading environment files in priority order
+const envFilesToTry = NODE_ENV === 'production' 
+    ? ['.env.production.local', '.env.production', '.env']
+    : ['.env.development.local', '.env.development', '.env'];
 
-// Also load from default .env if the specific one doesn't have all vars
-if (!process.env.MONGODB_URL) {
-    dotenv.config();
+for (const envFile of envFilesToTry) {
+    const envPath = path.resolve(process.cwd(), envFile);
+    const result = dotenv.config({ path: envPath });
+    if (result.parsed && result.parsed.MONGODB_URL) {
+        console.log(`✅ Loaded env from: ${envFile}`);
+        break;
+    }
 }
 
 // Set strictQuery before connection
