@@ -42,22 +42,53 @@ const MONGODB_CONFIG = {
     options: {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 10000,
-        socketTimeoutMS: 45000,
+        serverSelectionTimeoutMS: isProd ? 8000 : 10000,
+        socketTimeoutMS: isProd ? 8000 : 45000,
+        connectTimeoutMS: isProd ? 5000 : 10000,
+        maxPoolSize: isProd ? 5 : 10,
+        minPoolSize: isProd ? 1 : 2,
+        family: 4
     }
 };
 
 console.log(`🔌 Connecting to MongoDB (${isProd ? 'Production' : 'Development'})...`);
 console.log(`📍 MongoDB URL: ${mongoUrl.substring(0, 50)}...`);
 
-mongoose.connect(MONGODB_CONFIG.url, MONGODB_CONFIG.options)
-.then(() => {
-    console.log("✅ Successful connection with MongoDB");
-}).catch((err) => {
-    console.log('❌ Error: Connection to MongoDB not successful', err.message);
-    process.exit(1);
-});
+let connectAttempts = 0;
+const maxAttempts = isProd ? 3 : 1;
+
+function connectToMongoDB() {
+    connectAttempts++;
+    mongoose.connect(MONGODB_CONFIG.url, MONGODB_CONFIG.options)
+    .then(() => {
+        console.log("✅ Successful connection with MongoDB");
+    })
+    .catch((err) => {
+        console.log(`❌ Error: Connection attempt ${connectAttempts}/${maxAttempts}:`, err.message);
+        
+        if (isProd && connectAttempts < maxAttempts) {
+            console.log(`⏳ Retrying in 2 seconds...`);
+            setTimeout(connectToMongoDB, 2000);
+        } else {
+            process.exit(1);
+        }
+    });
+}
+
+connectToMongoDB();
 
 mongoose.Promise = global.Promise;
+
+mongoose.connection.on('connected', () => {
+    console.log('✅ Mongoose connected event');
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('⚠️ Mongoose disconnected event');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ Mongoose error:', err.message);
+});
 
 module.exports = mongoose;
