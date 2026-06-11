@@ -10,13 +10,19 @@ const envFilesToTry = NODE_ENV === 'production'
     ? ['.env.production.local', '.env.production', '.env']
     : ['.env.development.local', '.env.development', '.env'];
 
+let envFileLoaded = false;
 for (const envFile of envFilesToTry) {
     const envPath = path.resolve(process.cwd(), envFile);
     const result = dotenv.config({ path: envPath });
-    if (result.parsed && result.parsed.MONGODB_URL) {
+    if (!result.error) {
         console.log(`✅ Loaded env from: ${envFile}`);
+        envFileLoaded = true;
         break;
     }
+}
+
+if (!envFileLoaded) {
+    console.log('No env file found, checking process.env');
 }
 
 // Set strictQuery before connection

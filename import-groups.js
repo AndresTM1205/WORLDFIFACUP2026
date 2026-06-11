@@ -5,12 +5,17 @@ const fs = require('fs');
 
 async function importMatchTables() {
     try {
-        console.log('Connecting to MongoDB...');
+        console.log('Waiting for MongoDB connection...');
         
-        // Wait for connection
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait for MongoDB to be connected
+        while (!mongoose.connection.db) {
+            console.log('Waiting for db connection...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
         
+        console.log('Connected to MongoDB!');
         console.log('Clearing existing groups...');
+        
         // Drop the groups collection to remove all indexes and data
         await mongoose.connection.db.dropCollection('groups').catch(() => {
             console.log('Collection does not exist yet, will create new one');
