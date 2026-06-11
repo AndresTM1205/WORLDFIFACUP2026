@@ -1,39 +1,19 @@
 const mongoose = require('mongoose');
-const path = require('path');
-const dotenv = require('dotenv');
-
-// Ensure environment variables are loaded BEFORE using them
-const NODE_ENV = (process.env.NODE_ENV || 'development').trim();
-
-// Try loading environment files in priority order
-const envFilesToTry = NODE_ENV === 'production' 
-    ? ['.env.production.local', '.env.production', '.env']
-    : ['.env.development.local', '.env.development', '.env'];
-
-let envFileLoaded = false;
-for (const envFile of envFilesToTry) {
-    const envPath = path.resolve(process.cwd(), envFile);
-    const result = dotenv.config({ path: envPath });
-    if (!result.error) {
-        console.log(`✅ Loaded env from: ${envFile}`);
-        envFileLoaded = true;
-        break;
-    }
-}
-
-if (!envFileLoaded) {
-    console.log('No env file found, checking process.env');
-}
 
 // Set strictQuery before connection
 mongoose.set('strictQuery', false);
 
 // MongoDB connection - Configuration from environment variables
+const NODE_ENV = (process.env.NODE_ENV || 'development').trim();
 const isProd = NODE_ENV === 'production';
-const mongoUrl = process.env.MONGODB_URL || (isProd ? undefined : 'mongodb://localhost:27017/worldcup2026');
+
+// Use MONGODB_URL from environment (should be loaded by config/env.js before this module)
+const mongoUrl = process.env.MONGODB_URL;
 
 if (!mongoUrl) {
     console.error('❌ MONGODB_URL environment variable is not set!');
+    console.error('NODE_ENV:', NODE_ENV);
+    console.error('Available env keys:', Object.keys(process.env).filter(k => k.includes('MONGO')));
     process.exit(1);
 }
 
