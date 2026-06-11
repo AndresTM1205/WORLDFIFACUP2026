@@ -11,21 +11,31 @@ function loadEnvConfig() {
   // تعیین محیط اجرا 
   const NODE_ENV = (process.env.NODE_ENV || 'development').trim();
 
-  // بارگذاری فایل env مناسب
-  const envFile = NODE_ENV === 'production' ? '.env.production' : '.env.development';
-  const envPath = path.resolve(process.cwd(), envFile);
+  // بارگذاری فایل env مناسب - Try multiple locations
+  const envFiles = NODE_ENV === 'production' 
+    ? ['.env.production.local', '.env.production', '.env']
+    : ['.env.development.local', '.env.development', '.env'];
 
-  // بارگذاری متغیرهای محیطی
-  const result = dotenv.config({ path: envPath });
+  let envFileLoaded = null;
+  for (const envFile of envFiles) {
+    const envPath = path.resolve(process.cwd(), envFile);
+    const result = dotenv.config({ path: envPath });
+    
+    if (!result.error) {
+      envFileLoaded = envFile;
+      console.log(`✅ Loaded env from: ${envFile}`);
+      break;
+    }
+  }
 
-  if (result.error) {
-    console.warn(`⚠️ فایل ${envFile} یافت نشد، استفاده از مقادیر پیش‌فرض`);
-    // بارگذاری .env پیش‌فرض
-    dotenv.config();
+  if (!envFileLoaded) {
+    console.warn(`⚠️ No env files found, using environment variables`);
   }
 
   console.log(`🌍 محیط: ${NODE_ENV}`);
-  console.log(`📁 فایل env: ${envFile}`);
+  if (envFileLoaded) {
+    console.log(`📁 فایل env: ${envFileLoaded}`);
+  }
 
   // تنظیمات پیش‌فرض
   config = {
@@ -42,7 +52,7 @@ function loadEnvConfig() {
     FRONTEND_URL: process.env.FRONTEND_URL || `http://localhost:${process.env.PORT || 3050}`,
 
     // دیتابیس
-    MONGODB_URL: process.env.MONGODB_URL || 'mongodb://localhost:27017/worldcup2026',
+    MONGODB_URL: process.env.MONGODB_URL || process.env.MONGODB_CONNECTION_STRING || 'mongodb://localhost:27017/worldcup2026',
 
     // امنیت
     JWT_SECRET: process.env.JWT_SECRET || 'worldcup2026_dev_secret_key',
