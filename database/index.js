@@ -19,7 +19,7 @@ const MONGODB_CONFIG = isProd ? {
     options: {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
     }
 };
@@ -30,8 +30,9 @@ mongoose.connect(MONGODB_CONFIG.url, MONGODB_CONFIG.options)
 .then(() => {
     console.log("✅ Successful connection with MongoDB");
 }).catch((err) => {
-    console.log('❌ Error: Connection to MongoDB not successful', err.message);
-    process.exit(1);
+    console.log('⚠️  MongoDB unavailable - using mock data mode:', err.message);
+    console.log('💡 Server will continue with mock data endpoints');
+    // Don't exit - allow server to run with mock data
 });
 
 mongoose.Promise = global.Promise;
